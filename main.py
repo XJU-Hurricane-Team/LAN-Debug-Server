@@ -1,6 +1,15 @@
 import re
 from Server import *
+import socket
 
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
 def get_jlink_list():
     proc = Popen(
@@ -20,12 +29,12 @@ def get_jlink_list():
 
     port = 19010
     server_list = []
-
+    ip = get_local_ip()
     for jlink in jlink_list:
-        new_server = JLinkServer(jlink[1], port)
+        new_server = JLinkServer(jlink[1], port, ip)
         server_list.append(new_server)
-
         port += 1
 
     return server_list
+
 

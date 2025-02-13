@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JlinkDebug</title>
+    <link rel="icon" href="/templates/logo-banner.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0f7e9;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #238c59;
+        }
+
+        .info-block {
+            display: block;
+            /* 更改为 block */
+            border: 2px solid #333;
+            margin: 20px auto;
+            /* 添加 auto 来水平居中 */
+            width: 60%;
+            padding: 10px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+
+        .info-row div {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .code-block {
+            border: 2px solid #333;
+            padding: 20px;
+            margin: 20px auto;
+            /* 添加 auto 来水平居中 */
+            background-color: #c4e7ff;
+            width: 60%;
+            text-align: left;
+            white-space: pre-wrap;
+            font-family: Consolas, "Courier New", monospace;
+        }
+
+        .refresh-button {
+            background-color: #238c59;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .refresh-button:hover {
+            background-color: #2e8b57;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Hurricane<br>LAN-Debug-Server</h1>
+
+    <div class="info-block" id="jlink-info">
+        <!-- This section will be populated dynamically -->
+        <div class="info-row">
+            <div>端口号</div>
+            <div>序列号</div>
+            <!-- <div>别名</div> -->
+            <div>勾选</div>
+        </div>
+
+    </div>
+
+    <div class="code-block" id="selected-info">
+        <!-- Selected JLink information will be displayed here -->
+    </div>
+
+    <button class="refresh-button" onclick="refreshJlinkList()">刷新</button>
+
+    <script>
+        function refreshJlinkList() {
+            fetch('/get_jlink_list')
+                .then(response => response.json())
+                .then(data => {
+                    const jlinkInfo = document.getElementById('jlink-info');
+                    const selectedInfo = document.getElementById('selected-info');
+                    selectedInfo.textContent = '';
+                    jlinkInfo.innerHTML = `<div class="info-row">
+                        <div>端口号</div>
+                        <div>序列号</div>
+                        <div>勾选</div>
+                    </div>`;
+
+                    data.forEach(jlink => {
+                        const row = document.createElement('div');
+                        row.className = 'info-row';
+                        row.innerHTML = `<div>${jlink.port}</div>
+                                         <div>${jlink.serial}</div>
+                                         <input type="checkbox" name="jlink-select" />`;
+
+                        row.querySelector('input').addEventListener('change', function () {
+                            if (this.checked) {
+                                selectedInfo.textContent = `"-select",\n"IP=${jlink.ip}:${jlink.port}",\n`;
+                            }else {
+                            selectedInfo.textContent = '';
+                        }
+                        });
+
+                        jlinkInfo.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // 最开始的时候刷新一次
+        refreshJlinkList();
+    </script>
+</body>
+
+</html>

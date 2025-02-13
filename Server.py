@@ -17,11 +17,12 @@ def non_block_read(output):
 
 
 class JLinkServer:
-    def __init__(self, sn, port):
+    def __init__(self, sn, port, ip):
         self.sn = sn
         self.port = port
         self.state = ServerStatus.CLOSED
         self.proc = None
+        self.ip = ip
 
     def start(self):
         self.proc = Popen(
