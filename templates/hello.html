@@ -114,10 +114,10 @@
 
                         row.querySelector('input').addEventListener('change', function () {
                             if (this.checked) {
-                                selectedInfo.textContent = `"-select",\n"IP=${jlink.ip}:${jlink.port}",\n`;
-                            }else {
-                            selectedInfo.textContent = '';
-                        }
+                                selectedInfo.textContent = `调试配置：\n"-select",\n"IP=${jlink.ip}:${jlink.port}",\n \n烧录配置： \n-IP ${jlink.ip}:${jlink.port}\n`;
+                            } else {
+                                selectedInfo.textContent = '';
+                            }
                         });
 
                         jlinkInfo.appendChild(row);
