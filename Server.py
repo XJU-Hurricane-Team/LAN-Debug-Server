@@ -23,6 +23,8 @@ class JLinkServer:
         self.state = ServerStatus.CLOSED
         self.proc = None
         self.ip = ip
+        self.log = ''
+        self.err = ''
 
     def start(self):
         self.proc = Popen(
@@ -36,15 +38,12 @@ class JLinkServer:
     def stop(self):
         self.proc.kill()
         self.state = ServerStatus.CLOSED
+        self.log = ''
 
-    def read_log_line(self):
+    def get_log(self):
         if self.state == ServerStatus.OPENED:
-            return self.proc.stdout.readline()
-        else:
-            return ''
+            self.log += self.proc.stdout.read()
 
-    def read_err_line(self):
+    def get_err(self):
         if self.state == ServerStatus.OPENED:
-            return self.proc.stderr.readline()
-        else:
-            return ''
+            self.log += self.proc.stderr.read()

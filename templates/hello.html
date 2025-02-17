@@ -5,130 +5,131 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JlinkDebug</title>
-    <link rel="icon" href="/templates/logo-banner.png" type="image/png">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #e0f7e9;
-            color: #333;
-            text-align: center;
-            padding: 50px;
-        }
-
-        h1 {
-            font-size: 2em;
-            color: #238c59;
-        }
-
-        .info-block {
-            display: block;
-            /* 更改为 block */
-            border: 2px solid #333;
-            margin: 20px auto;
-            /* 添加 auto 来水平居中 */
-            width: 60%;
-            padding: 10px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-        }
-
-        .info-row div {
-            min-width: 80px;
-            text-align: center;
-        }
-
-        .code-block {
-            border: 2px solid #333;
-            padding: 20px;
-            margin: 20px auto;
-            /* 添加 auto 来水平居中 */
-            background-color: #c4e7ff;
-            width: 60%;
-            text-align: left;
-            white-space: pre-wrap;
-            font-family: Consolas, "Courier New", monospace;
-        }
-
-        .refresh-button {
-            background-color: #238c59;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-
-            cursor: pointer;
-            font-size: 1.2em;
-            margin-top: 20px;
-            border-radius: 5px;
-        }
-
-        .refresh-button:hover {
-            background-color: #2e8b57;
-        }
-    </style>
+    <link rel="icon" href="/static/logo-banner.png" type="image/png">
+    <link href="/static/style.css" rel="stylesheet" type="text/css"/>
 </head>
 
+
 <body>
-    <h1>Hurricane<br>LAN-Debug-Server</h1>
-
-    <div class="info-block" id="jlink-info">
-        <!-- This section will be populated dynamically -->
-        <div class="info-row">
-            <div>端口号</div>
-            <div>序列号</div>
-            <!-- <div>别名</div> -->
-            <div>勾选</div>
-        </div>
-
-    </div>
-
-    <div class="code-block" id="selected-info">
-        <!-- Selected JLink information will be displayed here -->
-    </div>
-
+<h1>Hurricane<br>LAN-Debug-Server</h1>
+<div class="container">
     <button class="refresh-button" onclick="refreshJlinkList()">刷新</button>
+</div>
 
-    <script>
-        function refreshJlinkList() {
-            fetch('/get_jlink_list')
-                .then(response => response.json())
-                .then(data => {
-                    const jlinkInfo = document.getElementById('jlink-info');
-                    const selectedInfo = document.getElementById('selected-info');
-                    selectedInfo.textContent = '';
-                    jlinkInfo.innerHTML = `<div class="info-row">
-                        <div>端口号</div>
-                        <div>序列号</div>
-                        <div>勾选</div>
-                    </div>`;
 
-                    data.forEach(jlink => {
-                        const row = document.createElement('div');
-                        row.className = 'info-row';
-                        row.innerHTML = `<div>${jlink.port}</div>
-                                         <div>${jlink.serial}</div>
-                                         <input type="checkbox" name="jlink-select" />`;
+<div class="row-container" id="jlink-table">
+    <div class="row-title">
+        <div class="column">序列号</div>
+        <div class="column">端口</div>
+    </div>
+</div>
 
-                        row.querySelector('input').addEventListener('change', function () {
-                            if (this.checked) {
-                                selectedInfo.textContent = `调试配置：\n"-select",\n"IP=${jlink.ip}:${jlink.port}",\n \n烧录配置： \n-IP ${jlink.ip}:${jlink.port}\n`;
-                            } else {
-                                selectedInfo.textContent = '';
-                            }
-                        });
+<div class="config-box" id="config" style="display: none;">
+    <code>launch.json</code>
+    <div class="code-container">
+        <code id="debug-param">"ipAddress": "xx.xx.xx.xx:yy",</code>
+        <button id="copy-button" onclick="copyCode('debug-param')"><span>复制</span></button>
+    </div>
+    烧录参数：
+    <div class="code-container">
+        <code id="flash-param">-IP xx.xx.xx.xx:yy</code>
+        <button id="copy-button" onclick="copyCode('flash-param')"><span>复制</span></button>
+    </div>
 
-                        jlinkInfo.appendChild(row);
-                    });
-                })
-                .catch(error => console.error('Error:', error));
+
+</div>
+
+
+<script>
+    const copyButton = document.getElementById('copy-button');
+    const buttonText = copyButton.querySelector('span');
+
+    function copyCode(id) {
+        const codeEle = document.getElementById(id);
+        const code = codeEle.textContent;
+        const buttonText = codeEle.nextElementSibling.querySelector('span');
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code);
+        } else {
+            var textArea = document.createElement("textarea");
+            textArea.value = code;
+            textArea.style.position = "fixed";  // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                var successful = document.execCommand('copy');
+                if (!successful) {
+                    console.error('Fallback: Copying text command was unsuccessful');
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            }
+            document.body.removeChild(textArea);
         }
 
-        // 最开始的时候刷新一次
-        refreshJlinkList();
-    </script>
+        // 添加淡出效果
+        buttonText.classList.remove('fade-in');
+        buttonText.classList.add('fade-out');
+
+        // 在淡出完成后改变文字
+        setTimeout(() => {
+            buttonText.textContent = '成功';
+            buttonText.classList.remove('fade-out');
+            buttonText.classList.add('fade-in');
+        }, 300); // 等待淡出完成
+
+        // 3秒后恢复文字和样式
+        setTimeout(() => {
+            buttonText.classList.remove('fade-in');
+            buttonText.classList.add('fade-out');
+
+            setTimeout(() => {
+                buttonText.textContent = '复制';
+                buttonText.classList.remove('fade-out');
+                buttonText.classList.add('fade-in');
+            }, 300); // 等待淡出完成
+        }, 3000);
+
+    }
+
+    function refreshJlinkList() {
+        fetch('/get_jlink_list')
+            .then(response => response.json())
+            .then(data => {
+                const jlinkInfo = document.getElementById('jlink-table');
+
+                data.forEach(jlink => {
+                    const row = document.createElement('div');
+                    row.className = 'row';
+
+                    row.setAttribute("port", jlink.port)
+                    row.innerHTML = `<div class="column">${jlink.serial}</div><div class="column">${jlink.port}</div>`;
+                    row.addEventListener('click', () => {
+                        // 调用 JavaScript 函数
+                        handleRowClick(jlink);
+                    });
+                    jlinkInfo.appendChild(row);
+                });
+
+                // 处理行点击的函数
+                function handleRowClick(jlink) {
+                    const config = document.getElementById('config');
+                    config.style.display = "";
+                    const debug_param = document.getElementById('debug-param');
+                    const flash_param = document.getElementById('flash-param');
+                    debug_param.textContent = `"ipAddress": "${jlink.ip}:${jlink.port}",`;
+                    flash_param.textContent = `-IP ${jlink.ip}:${jlink.port}`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 最开始的时候刷新一次
+    refreshJlinkList();
+
+</script>
 </body>
 
 </html>

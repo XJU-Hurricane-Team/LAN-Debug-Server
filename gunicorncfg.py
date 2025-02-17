@@ -1,5 +1,5 @@
 # 是否开启debug模式
-debug = True
+debug = False
 # 访问地址
 bind = "0.0.0.0:8000"
 # 工作进程数
