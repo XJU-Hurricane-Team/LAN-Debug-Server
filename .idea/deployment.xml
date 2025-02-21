@@ -1,27 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="root@10.10.26.3:22 password" confirmBeforeUploading="false" confirmBeforeDeletion="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="hurricane-pi1" confirmBeforeUploading="false" confirmBeforeDeletion="false">
     <option name="confirmBeforeDeletion" value="false" />
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
-      <paths name="myAzure@48.210.68.133:22 password">
+      <paths name="hurricane-pi1">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="root@10.10.26.3:22 password">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/ubuntu/PythonProj/RemoteJLinkDebug" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="ubuntu@192.168.0.106:22 password">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/ubuntu/PythonProj/RemoteJLinkDebug" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/Program/JlinkSite" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

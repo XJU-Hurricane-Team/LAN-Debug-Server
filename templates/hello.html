@@ -99,7 +99,10 @@
             .then(response => response.json())
             .then(data => {
                 const jlinkInfo = document.getElementById('jlink-table');
-
+                jlinkInfo.innerHTML = `<div class="row-title">
+                            <div class="column">序列号</div>
+                            <div class="column">端口</div>
+                            </div>`;
                 data.forEach(jlink => {
                     const row = document.createElement('div');
                     row.className = 'row';

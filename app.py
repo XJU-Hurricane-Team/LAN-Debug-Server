@@ -15,7 +15,17 @@ def get_local_ip():
 
 
 def get_jlink():
-    out = 'J-Link[0] USB Serial number: 20240002\nJ-Link[1] USB Serial number: 20240003'
+    proc = Popen(
+        args=[f'{JLINK_PATH}{JLINK_COMMANDER_EXEC}', '-NoGui', '1', '-ExitOnError', '1'],
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=True,
+        encoding='utf-8'
+    )
+
+    proc.stdin.write('ShowEmuList USB\nq')
+    out, err = proc.communicate()
 
     jlink_filter_re = re.compile(r'J-Link\[(\d+)].*?Serial number: (\d+)')
     jlink_list = jlink_filter_re.findall(out)
