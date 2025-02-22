@@ -28,7 +28,7 @@ class JLinkServer:
 
     def start(self):
         self.proc = Popen(
-            args=[f'{JLINK_PATH}{JLINK_REMOTE_SERVER_EXEC}', '-select', f'USB={self.sn}', '-port', f'{self.port}'],
+            args=[f'{JLINK_PATH}{JLINK_REMOTE_SERVER_EXEC}', '-select', f'USB={self.sn}', '-port', f'{self.port}', '-SelectEmuBySN', f'{self.sn}'],
             stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf8'
         )
         non_block_read(self.proc.stdout)
