@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="a9e093b4-c554-44c5-84ab-f637513989f3" name="hurricane-pi1">
+        <fileTransfer rootFolder="/home/hurricane/Program/LAN-Debug-Server" accessType="SFTP" host="192.168.0.112" port="22" sshConfigId="eb286b2c-2586-4682-b65d-d190bf3a0d83" sshConfig="hurricane@192.168.0.112:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" isUseSudo="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
