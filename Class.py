@@ -1,6 +1,7 @@
 from enum import Enum
 from configurations import *
 from subprocess import Popen, PIPE
+from multiprocessing import  Process
 import os
 import fcntl
 import serial
@@ -79,7 +80,6 @@ class Jport:
         self.client_socket = None
 
     def start(self, baudrate):
-        self.port_num = get_free_port()
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(('0.0.0.0', self.port_num))
         server.listen(5)
@@ -106,9 +106,10 @@ class JLinkServer:
         self.port = port
         self.state = ServerStatus.CLOSED
         self.proc = None
-        self.thread = None
+        self.jproc = None
         self.ip = ip
         self.jport = jport  # JlinkPort object
+        self.jport_num = None
 
     def start(self):
         self.proc = Popen(

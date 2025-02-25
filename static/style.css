@@ -39,21 +39,24 @@ h1 {
 }
 
 .column {
-    /*flex: 1; !* 使两列宽度相等 *!*/
-    padding: 10px; /* 减小内边距 */
+    padding: 10px;
     text-align: center;
+    border-right: 1px solid #ddd;
+    /* 新增以下flex属性 */
+    flex: 1; /* 默认比例 */
 }
 
-.column:nth-child(1) {
-    flex: 2; /* 第一列占 1 份 */
-}
-
-.column:nth-child(2) {
-    flex: 1; /* 第二列占 2 份 */
-}
+/* 设置特殊列宽 */
+.column:nth-child(1) { flex: 2 } /* 占3份 */
+.column:nth-child(2) { flex: 1 } /* 占1份 */
+.column:nth-child(3) { flex: 1 } /* 占2份 */
 
 .column:first-child {
     border-right: 1px solid #ddd; /* 列之间的分隔线 */
+}
+
+.column:last-child {
+    border-right: none;
 }
 
 .config-box {

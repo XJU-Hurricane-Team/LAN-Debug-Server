@@ -70,9 +70,11 @@ app = Flask(__name__, static_folder='static')
 JlinkList = get_jlink()
 for Jlink in JlinkList:
     Jlink.start()
-    Jlink.thread = threading.Thread(target=Jlink.jport.start, args=(115200,))
-    Jlink.thread.start()
-    print(Jlink.jport.port_num)
+    Jlink.jport.port_num  = get_free_port()
+    Jlink.jport_num = Jlink.jport.port_num
+    Jlink.jproc = Process(target=Jlink.jport.start, args=(115200,))
+    Jlink.jproc.start()
+    print(Jlink.jport_num)
 
 running_jlink_servers = {jlink.sn: jlink for jlink in JlinkList}
 
@@ -85,14 +87,15 @@ def index():
 @app.route('/get_jlink_list')
 def get_jlink_list():
     jlink_list = get_jlink()
-
     for jlink in jlink_list:
         if jlink.sn not in running_jlink_servers:
             jlink.start()
-            jlink.thread = threading.Thread(target=Jlink.jport.start, args=(115200,))
-            jlink.thread.start()
-            print(Jlink.jport.port_num)
+            jlink.jport.port_num = get_free_port()
+            jlink.jport_num = jlink.jport.port_num
+            jlink.jproc = Process(target=Jlink.jport.start, args=(115200,))
+            jlink.jproc.start()
+            print(Jlink.jport_num)
             running_jlink_servers[jlink.sn] = jlink
     # 将对象列表转换为字典列表以便JSON序列化
-    jlink_data = [{'port': server.port, 'serial': server.sn, 'ip': server.ip,} for server in jlink_list]
+    jlink_data = [{'port': server.port, 'sn': server.sn, 'ip': server.ip, 'jportnum': server.jport_num,} for server in running_jlink_servers.values()]
     return jsonify(jlink_data)
