@@ -7,6 +7,8 @@ import fcntl
 import serial
 import socket
 import threading
+import signal
+
 
 
 class ServerStatus(Enum):
@@ -101,9 +103,9 @@ class Jport:
 
 # JLinkServer class
 class JLinkServer:
-    def __init__(self, sn, port, ip, jport):
+    def __init__(self, sn, ip, jport):
         self.sn = sn
-        self.port = port
+        self.port = None
         self.state = ServerStatus.CLOSED
         self.proc = None
         self.jproc = None
@@ -112,8 +114,9 @@ class JLinkServer:
         self.jport_num = None
 
     def start(self):
+        self.port = get_free_port()
         self.proc = Popen(
-            args=[f'{JLINK_PATH}{JLINK_REMOTE_SERVER_EXEC}', '-select', f'USB={self.sn}', '-port', f'{self.port}'],
+            args=[f'{JLINK_PATH}{JLINK_REMOTE_SERVER_EXEC}', '-select', f'USB={self.sn}', '-port', f'{self.port}',],
             stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf8'
         )
         non_block_read(self.proc.stdout)
@@ -121,7 +124,15 @@ class JLinkServer:
         self.state = ServerStatus.OPENED
 
     def stop(self):
-        self.proc.kill()
+        # self.proc.kill()
+        # os.kill(self.proc.pid, signal.SIGKILL)
+        os.kill(self.proc.pid, signal.SIGTERM)
+        self.proc.wait(2)
+        self.jproc.kill()
+        del self.jport
+        self.proc = None
+        self.jproc = None
+        self.jport_num = None
         self.state = ServerStatus.CLOSED
 
     def read_log_line(self):

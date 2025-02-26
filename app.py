@@ -52,19 +52,19 @@ def get_jlink():
     jlink_filter_re = re.compile(r'J-Link\[(\d+)].*?Serial number: (\d+)')
     jlink_list = jlink_filter_re.findall(out)
 
-    port = 19010
+    # port = 19010
     server_list = []
     ip = get_local_ip()
     port_lib = get_serial_ports()
 
     for jlink in jlink_list:
-        new_server = JLinkServer(jlink[1], port, ip, port_lib[jlink[1]])
+        new_server = JLinkServer(jlink[1], ip, port_lib[jlink[1]])
         server_list.append(new_server)
-        port += 1
+
 
     return server_list
 
-
+running_jlink_servers = {}
 app = Flask(__name__, static_folder='static')
 
 JlinkList = get_jlink()
@@ -87,15 +87,21 @@ def index():
 @app.route('/get_jlink_list')
 def get_jlink_list():
     jlink_list = get_jlink()
+    jlink_sn_list = [jlink.sn for jlink in jlink_list]
+    for running_jlink in running_jlink_servers.values():
+        if running_jlink.sn not in jlink_sn_list:
+            running_jlink.stop()
+            del running_jlink_servers[running_jlink.sn]
+
     for jlink in jlink_list:
         if jlink.sn not in running_jlink_servers:
             jlink.start()
             jlink.jport.port_num = get_free_port()
             jlink.jport_num = jlink.jport.port_num
-            jlink.jproc = Process(target=Jlink.jport.start, args=(115200,))
+            jlink.jproc = Process(target=jlink.jport.start, args=(115200,))
             jlink.jproc.start()
-            print(Jlink.jport_num)
+            print(jlink.jport_num)
             running_jlink_servers[jlink.sn] = jlink
     # 将对象列表转换为字典列表以便JSON序列化
-    jlink_data = [{'port': server.port, 'sn': server.sn, 'ip': server.ip, 'jportnum': server.jport_num,} for server in running_jlink_servers.values()]
+    jlink_data = [{'port': server.port, 'sn': server.sn, 'ip': server.ip, 'jport_num': server.jport_num,} for server in running_jlink_servers.values()]
     return jsonify(jlink_data)

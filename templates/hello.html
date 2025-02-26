@@ -110,7 +110,7 @@
                     row.className = 'row';
 
                     row.setAttribute("port", jlink.port)
-                    row.innerHTML = `<div class="column">${jlink.sn}</div><div class="column">${jlink.port}</div><div class="column">${jlink.jportnum}</div>`;
+                    row.innerHTML = `<div class="column">${jlink.sn}</div><div class="column">${jlink.port}</div><div class="column">${jlink.jport_num}</div>`;
                     row.addEventListener('click', () => {
                         // 调用 JavaScript 函数
                         handleRowClick(jlink);
