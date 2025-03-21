@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JlinkDebug</title>
+    <link rel="icon" href="/static/logo-banner.png" type="image/png">
+    <link href="/static/style.css" rel="stylesheet" type="text/css"/>
+</head>
+
+
+<body>
+<h1>Hurricane<br>LAN-Debug-Server</h1>
+<div class="container">
+    <button class="refresh-button" onclick="refreshJlinkList()">刷新</button>
+</div>
+
+
+<div class="row-container" id="jlink-table">
+    <div class="row-title">
+        <div class="column">序列号</div>
+        <div class="column">调试端口</div>
+        <div class="column">串口端口</div>
+    </div>
+</div>
+
+<div class="config-box" id="config" style="display: none;">
+    <code>launch.json</code>
+    <div class="code-container">
+        <code id="debug-param">"ipAddress": "xx.xx.xx.xx:yy",</code>
+        <button id="copy-button" onclick="copyCode('debug-param')"><span>复制</span></button>
+    </div>
+    烧录参数：
+    <div class="code-container">
+        <code id="flash-param">-IP xx.xx.xx.xx:yy</code>
+        <button id="copy-button" onclick="copyCode('flash-param')"><span>复制</span></button>
+    </div>
+
+
+</div>
+
+
+<script>
+    const copyButton = document.getElementById('copy-button');
+    const buttonText = copyButton.querySelector('span');
+
+    function copyCode(id) {
+        const codeEle = document.getElementById(id);
+        const code = codeEle.textContent;
+        const buttonText = codeEle.nextElementSibling.querySelector('span');
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code);
+        } else {
+            var textArea = document.createElement("textarea");
+            textArea.value = code;
+            textArea.style.position = "fixed";  // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                var successful = document.execCommand('copy');
+                if (!successful) {
+                    console.error('Fallback: Copying text command was unsuccessful');
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // 添加淡出效果
+        buttonText.classList.remove('fade-in');
+        buttonText.classList.add('fade-out');
+
+        // 在淡出完成后改变文字
+        setTimeout(() => {
+            buttonText.textContent = '成功';
+            buttonText.classList.remove('fade-out');
+            buttonText.classList.add('fade-in');
+        }, 300); // 等待淡出完成
+
+        // 3秒后恢复文字和样式
+        setTimeout(() => {
+            buttonText.classList.remove('fade-in');
+            buttonText.classList.add('fade-out');
+
+            setTimeout(() => {
+                buttonText.textContent = '复制';
+                buttonText.classList.remove('fade-out');
+                buttonText.classList.add('fade-in');
+            }, 300); // 等待淡出完成
+        }, 3000);
+
+    }
+
+    function refreshJlinkList() {
+        fetch('/get_jlink_list')
+            .then(response => response.json())
+            .then(data => {
+                let ipAddress = '';
+                const jlinkInfo = document.getElementById('jlink-table');
+                jlinkInfo.innerHTML = `<div class="row-title"><div class="column">序列号</div><div class="column">调试端口</div><div class="column">串口端口</div></div>`;
+                for (const key in data) {
+                    if (key == "ip") {
+                        ipAddress = data["ip"];
+                        continue
+                    }
+
+
+                    const row = document.createElement('div');
+                    row.className = 'row';
+
+                    row.setAttribute("port", data[key]['server'])
+                    row.innerHTML = `<div class="column">${key}</div><div class="column">${data[key]['server']}</div><div class="column">${data[key]['serial']}</div>`;
+                    row.addEventListener('click', () => {
+                        // 调用 JavaScript 函数
+                        handleRowClick(data[key]);
+                    });
+                    jlinkInfo.appendChild(row);
+                }
+
+                // 处理行点击的函数
+                function handleRowClick(jlink) {
+                    const config = document.getElementById('config');
+                    config.style.display = "";
+                    const debug_param = document.getElementById('debug-param');
+                    const flash_param = document.getElementById('flash-param');
+                    debug_param.textContent = `"ipAddress": "${ipAddress}:${jlink['server']}",`;
+                    flash_param.textContent = `-IP ${ipAddress}:${jlink['server']}`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // 最开始的时候刷新一次
+    refreshJlinkList();
+
+</script>
+</body>
+
+</html>

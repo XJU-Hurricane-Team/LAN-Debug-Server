@@ -1,10 +1,15 @@
+import json
+import socket
+import os
 from flask import Flask, render_template, jsonify
-import re
-from Class import *
-import serial
-import serial.tools.list_ports
+from JSerialPort import get_serial
+from JLinkServer import get_jlink
 
-#获取本地IP地址
+# 端口配置, 存在 json 文件中
+port_config = {}
+
+
+# 获取本地IP地址
 def get_local_ip():
     s = None
     try:
@@ -17,91 +22,36 @@ def get_local_ip():
     return ip
 
 
-#获取Jlink串口字典 {SN:PortName}
-
-def get_serial_ports():
-    ports_list = list(serial.tools.list_ports.comports())
-    ports_lib = {}
-
-    if len(ports_list) <= 0:
-        return 0
-    else:
-        for comport in ports_list:
-            hwid = comport.hwid
-            ser = re.search(r'SER=(\d+)', hwid)
-            if ser:
-                sn = str(int(ser.group(1)))
-                port = Jport(sn, comport.device)
-                ports_lib[sn] = port
-        return ports_lib
-
-#获取Jlink服务器列表
-def get_jlink():
-    proc = Popen(
-        args=[f'{JLINK_PATH}{JLINK_COMMANDER_EXEC}', '-NoGui', '1', '-ExitOnError', '1'],
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
-        shell=True,
-        encoding='utf-8'
-    )
-
-    proc.stdin.write('ShowEmuList USB\nq')
-    out, err = proc.communicate()
-
-    jlink_filter_re = re.compile(r'J-Link\[(\d+)].*?Serial number: (\d+)')
-    jlink_list = jlink_filter_re.findall(out)
-
-    # port = 19010
-    server_list = []
-    ip = get_local_ip()
-    port_lib = get_serial_ports()
-
-    for jlink in jlink_list:
-        new_server = JLinkServer(jlink[1], ip, port_lib[jlink[1]])
-        server_list.append(new_server)
-
-
-    return server_list
-
-running_jlink_servers = {}
 app = Flask(__name__, static_folder='static')
-
-JlinkList = get_jlink()
-for Jlink in JlinkList:
-    Jlink.start()
-    Jlink.jport.port_num  = get_free_port()
-    Jlink.jport_num = Jlink.jport.port_num
-    Jlink.jproc = Process(target=Jlink.jport.start, args=(115200,))
-    Jlink.jproc.start()
-    print(Jlink.jport_num)
-
-running_jlink_servers = {jlink.sn: jlink for jlink in JlinkList}
 
 
 @app.route('/')
 def index():
-    return render_template('hello.html')
+    return render_template('index.html')
+
+
+# 当前连接到的 JLink 配置
+connected_jlink = {}
 
 
 @app.route('/get_jlink_list')
 def get_jlink_list():
-    jlink_list = get_jlink()
-    jlink_sn_list = [jlink.sn for jlink in jlink_list]
-    for running_jlink in running_jlink_servers.values():
-        if running_jlink.sn not in jlink_sn_list:
-            running_jlink.stop()
-            del running_jlink_servers[running_jlink.sn]
+    get_jlink(port_config, connected_jlink)
+    get_serial(port_config, connected_jlink)
+    json.dump(port_config, open("port.json", "w"))
+    connected_jlink['ip'] = get_local_ip()
+    return jsonify(connected_jlink)
 
-    for jlink in jlink_list:
-        if jlink.sn not in running_jlink_servers:
-            jlink.start()
-            jlink.jport.port_num = get_free_port()
-            jlink.jport_num = jlink.jport.port_num
-            jlink.jproc = Process(target=jlink.jport.start, args=(115200,))
-            jlink.jproc.start()
-            print(jlink.jport_num)
-            running_jlink_servers[jlink.sn] = jlink
-    # 将对象列表转换为字典列表以便JSON序列化
-    jlink_data = [{'port': server.port, 'sn': server.sn, 'ip': server.ip, 'jport_num': server.jport_num,} for server in running_jlink_servers.values()]
-    return jsonify(jlink_data)
+
+if not os.path.exists("port.json"):
+    f = open("port.json", "w")
+    f.write('{}')
+    f.close()
+
+get_jlink(port_config, connected_jlink)
+get_serial(port_config, connected_jlink)
+json.dump(port_config, open("port.json", "w"))
+port_config = json.load(open("port.json"))
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True, use_reloader=False)
