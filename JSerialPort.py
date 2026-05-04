@@ -167,7 +167,8 @@ def get_serial(port_config, connected_jlink):
 
         port += 1
         if sn not in port_config:
-            port_config[sn] = {'serial': port, 'server': JLINK_SERIAL_PORT_START + (port - JLINK_SERIAL_PORT_START)}
+            # 只设置 serial，server 交给 get_jlink 负责
+            port_config[sn] = {'serial': port}
         elif 'serial' not in port_config[sn]:
             port_config[sn]['serial'] = port
         else:
@@ -177,10 +178,12 @@ def get_serial(port_config, connected_jlink):
 
         g_jlink_serial_list.append(new_serial)
 
-        if sn not in connected_jlink.keys():
-            connected_jlink[sn] = {'serial': port}
-        elif 'serial' not in connected_jlink[sn]:
-            connected_jlink[sn]['serial'] = port
+        if sn not in connected_jlink:
+            connected_jlink[sn] = {}
+        connected_jlink[sn]['serial'] = port
+        # 从 port_config 补全 server 信息（如果 get_jlink 未先设置）
+        if 'server' not in connected_jlink[sn] and sn in port_config and 'server' in port_config[sn]:
+            connected_jlink[sn]['server'] = port_config[sn]['server']
 
     # 移除拔掉的 JLINK
     for j_serial in g_jlink_serial_list:
