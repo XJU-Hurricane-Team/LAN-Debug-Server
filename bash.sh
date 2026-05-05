@@ -1,6 +1,8 @@
 #! /bin/bash
 cd ~/LAN-Debug-Server || exit
 
+rm -f ./log/gunicorn.pid
+
 # 清理残留进程，避免端口冲突
 echo "正在停止旧进程..."
 pkill -9 -f 'gunicorn.*app:app' 2>/dev/null

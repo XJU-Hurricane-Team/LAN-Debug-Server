@@ -26,6 +26,7 @@ SERVICE_TEMPLATE="$PACK_DIR/${SERVICE_NAME}.service"
 SERVICE_TARGET="/etc/systemd/system/${SERVICE_NAME}.service"
 
 CURRENT_USER="$USER"
+CURRENT_GROUP="$(id -gn)"
 CURRENT_HOME="$HOME"
 ARCH="$(dpkg --print-architecture 2>/dev/null || uname -m)"
 
@@ -86,6 +87,7 @@ ${BOLD}LAN Debug Server  -  一键部署${NC}
 --------------------------------------------
   项目目录   : $PROJECT_DIR
   运行用户   : $CURRENT_USER
+  运行用户组 : $CURRENT_GROUP
   用户家目录 : $CURRENT_HOME
   系统架构   : $ARCH  (匹配 tag: ${JLINK_ARCH_TAG:-未知})
   JLink 包   : $(basename "$JLINK_DEB")
@@ -176,14 +178,19 @@ step "[6/6] 安装 systemd service"
 
 # 用 sed 把模板里硬编码的 pickingchip / 路径替换成当前实际值。
 # 替换顺序很关键：先长后短，先路径后用户名，避免误伤。
+#   1) 先替换最长的 项目目录 路径
+#   2) 再替换 /home/pickingchip 家目录前缀（Environment 里的 HOME / PATH 等）
+#   3) 然后逐行处理 User= / Group= / Environment="USER=..."
+#      —— 注意 Environment="USER=pickingchip" 行尾是引号，不能靠 $ 或空格锚定
 TMP_SERVICE="$(mktemp)"
 trap 'rm -f "$TMP_SERVICE"' EXIT
 
 sed \
     -e "s|/home/pickingchip/LAN-Debug-Server|${PROJECT_DIR}|g" \
     -e "s|/home/pickingchip|${CURRENT_HOME}|g" \
-    -e "s|=pickingchip$|=${CURRENT_USER}|g" \
-    -e "s|=pickingchip |=${CURRENT_USER} |g" \
+    -e "s|^User=pickingchip$|User=${CURRENT_USER}|" \
+    -e "s|^Group=pickingchip$|Group=${CURRENT_GROUP}|" \
+    -e "s|USER=pickingchip|USER=${CURRENT_USER}|g" \
     "$SERVICE_TEMPLATE" > "$TMP_SERVICE"
 
 info "生成的 service 文件预览（关键几行）："
