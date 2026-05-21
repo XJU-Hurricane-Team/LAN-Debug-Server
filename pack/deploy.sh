@@ -188,8 +188,8 @@ trap 'rm -f "$TMP_SERVICE"' EXIT
 sed \
     -e "s|/home/pickingchip/LAN-Debug-Server|${PROJECT_DIR}|g" \
     -e "s|/home/pickingchip|${CURRENT_HOME}|g" \
-    -e "s|^User=pickingchip$|User=${CURRENT_USER}|" \
-    -e "s|^Group=pickingchip$|Group=${CURRENT_GROUP}|" \
+    -e "s|^User=pickingchip|User=${CURRENT_USER}|" \
+    -e "s|^Group=pickingchip|Group=${CURRENT_GROUP}|" \
     -e "s|USER=pickingchip|USER=${CURRENT_USER}|g" \
     "$SERVICE_TEMPLATE" > "$TMP_SERVICE"
 
