@@ -7,7 +7,20 @@
 #### 自动
 
 1. 将仓库克隆或者复制至设备的用户目录下。
-2. 执行`pack`文件夹下的`depley.sh`脚本，一键完成部署。
+2. 在项目根目录以普通用户执行 `bash pack/deploy.sh`，一键完成部署（内部按需 sudo）。
+3. 确认部署后，脚本会询问局域网访问名称，例如输入 `robot`，部署完成后访问 `http://robot.local:8000`。回车沿用已有 Avahi 名称，首次默认使用系统短主机名。
+
+#### Avahi 与 Windows 代理
+
+已有部署可在 Linux 服务端单独执行 `bash pack/configure-avahi.sh`，或用 `bash pack/configure-avahi.sh robot` 指定名称。脚本安装并启用 `avahi-daemon`，仅修改 `/etc/avahi/avahi-daemon.conf` 的 `[server] host-name`，修改前自动备份。系统 hostname、hosts、DHCP、IPv6 和其他 Avahi 设置保持原样；已有特殊域名或机器 ID 命名配置时会提示检查。
+
+客户端和服务端需在同一局域网，网络须允许设备互通和 UDP 5353 mDNS。若名称冲突，Avahi 可能自动改名，可用 `sudo journalctl -u avahi-daemon -b` 查看实际发布名称。
+
+Windows 使用 Clash Verge 的**系统代理默认模式**时，在系统代理设置的绕过列表中**保留原有项，追加 `*.local`**。若不能编辑，检查当前版本是否需要关闭“始终使用默认绕过”，保存后确认生效。`<local>` 只匹配不含点的短主机名，不能覆盖 `robot.local`；仅增加 `DOMAIN-SUFFIX,local,DIRECT` 也不能替代系统代理绕过，因为请求仍可能交给代理解析。PAC / TUN 模式需分别检查其绕过、DNS 与路由设置。
+
+Windows 可用 `curl.exe --noproxy "*" --connect-timeout 5 -I http://robot.local:8000/` 检查直连 HTTP（将 robot 换为自己的名称）。
+
+参考：[Clash Verge 代理绕过说明](https://www.clashverge.dev/guide/bypass.html)、[Chromium 代理绕过规则](https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md)。
 
 #### 手动
 

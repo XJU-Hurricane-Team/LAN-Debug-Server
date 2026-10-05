@@ -69,6 +69,7 @@ fi
 [ -f "$SERVICE_TEMPLATE" ] || fail "找不到 service 模板: $SERVICE_TEMPLATE"
 [ -f "$PROJECT_DIR/requirements.txt" ] || fail "找不到 requirements.txt（你确定脚本放在 项目/pack/ 下吗？）"
 [ -f "$PROJECT_DIR/bash.sh" ] || fail "找不到 bash.sh"
+[ -f "$PACK_DIR/configure-avahi.sh" ] || fail "找不到 configure-avahi.sh"
 
 if [ -z "$JLINK_DEB" ]; then
     available="$(ls -1 "$PACK_DIR"/JLink_Linux_*.deb 2>/dev/null | xargs -n1 basename 2>/dev/null)"
@@ -97,6 +98,9 @@ EOF
 
 read -p "确认开始部署? [y/N] " -n 1 -r; echo
 [[ "$REPLY" =~ ^[Yy]$ ]] || { info "已取消。"; exit 0; }
+
+step "配置 Avahi 局域网访问名称"
+bash "$PACK_DIR/configure-avahi.sh"
 
 # ============================================================
 # 1. 系统依赖
@@ -230,5 +234,6 @@ ${GREEN}${BOLD}========== 部署完成 ==========${NC}
     禁用自启     : sudo systemctl disable ${SERVICE_NAME}
 
   下次开机会自动启动。如果浏览器打不开，先看 journalctl 排错。
+  也可使用上面配置的 http://名称.local:8000；Windows Clash Verge 系统代理绕过列表请追加 *.local（保留原有项）。
 
 EOF
