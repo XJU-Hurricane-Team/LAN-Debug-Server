@@ -5,6 +5,7 @@ import atexit
 from flask import Flask, render_template, jsonify, request, send_from_directory
 from JSerialPort import get_serial
 from JLinkServer import get_jlink
+from server_identity import get_server_identity
 from JRTTClient import (
     g_rtt_clients,
     get_or_start_rtt,
@@ -46,7 +47,7 @@ app = Flask(__name__, static_folder='static')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', server_identity=get_server_identity())
 
 
 # 当前连接到的 JLink 配置

@@ -39,28 +39,30 @@ Windows 可用 `curl.exe --noproxy "*" --connect-timeout 5 -I http://robot.local
 点击`Jlink`设备卡片上的刷新按钮显示设备上连接的所有`Jlink`，在下方列表点击要查看的`JLink`右侧连接配置卡片会显示对应`JLink`的信息。
 
 - 设备型号：由用户手动输入`JLink`连接的芯片型号，默认记忆`JLink`上次连接的型号。
-- lauch.json：用于设置`crotex-debug`调试配置项，直接复制使用。
-- 烧录参数：用于EDIE设置JLInk无线烧录参数，直接复制使用。
+- 客户端配置：填写芯片型号后，可复制或下载 `remote-jlink.json`，保存到客户端工程的 `Debug_LAN/` 目录。这是客户端工具的配置，不是服务端 Avahi 配置。
+- 服务器名称：优先读取 Avahi 当前实际发布的名称；不可读取时，参考当前网页的 `.local` 名称、Avahi 配置文件或服务器 IPv4，并显示来源。配置文件中的名称未必等于当前发布名称（例如名称冲突），请按提示核对；也可手动编辑。
+- 高级设置：配置客户端接口和速度，默认 `SWD` / `8000 kHz`；网页 RTT 仍使用服务端自身的接口和速度设置。已有自定义 `JLinkExe` 路径时，下载后保留实际路径。
+- 网页不会生成 `launch.json`。其芯片、ELF 和 SVD 路径需在客户端工程中手动核对。
+- Custom CLI 远程烧录：设备列表下方分别提供 Windows / Linux 命令及复制按钮，粘贴到 EIDE 的 Custom CLI 烧录配置。客户端需先准备 `Debug_LAN` 工具包和配置；该工具未配置全片擦除。
+- 布局：上方选择设备和生成客户端配置，下方 RTT 适应窗口剩余高度；点击“放大”专注查看 RTT，点击“还原”或按 Esc 返回。
 
-![PixPin_2026-05-05_15-34-19](./Picture/PixPin_2026-05-05_15-34-19.png)
+下方旧版使用截图仅用于参考；当前连接配置以 `Debug_LAN` 客户端工具包为准。
 
 #### 无线烧录
 
-![PixPin_2026-05-05_15-46-19](./Picture/PixPin_2026-05-05_15-46-19.png)
+先按客户端工具包 `Debug_LAN/README.md` 将工具复制到实际工程。需要 EIDE 单独远程烧录时，选择 `Custom CLI`，填写：
 
-![PixPin_2026-05-05_15-46-55](./Picture/PixPin_2026-05-05_15-46-55.png)
+```text
+python "${ProjectRoot}/Debug_LAN/jlink_flash.py" --program "${programFile}"
+```
 
-![PixPin_2026-05-05_15-48-16](./Picture/PixPin_2026-05-05_15-48-16.png)
-
-即可进行无线烧录。
+Linux 将 `python` 改为 `python3`。脚本读取工程内的 `Debug_LAN/remote-jlink.json`；网页下载的配置需手动保存到该位置。
 
 #### 无线调试
 
-![PixPin_2026-05-05_15-51-07](./Picture/PixPin_2026-05-05_15-51-07.png)
+将工具包 `Debug_LAN/vscode/launch.json` 和 `tasks.json` 合并到工程 `.vscode/`，手动核对 `launch.json` 的芯片、ELF 和 SVD 路径。编译后选择 `Debug: JLINK LAN` 并按 F5，前置任务自动启动本机 GDB Server，调试连接使用 `127.0.0.1:2331`，远程探针地址由客户端 JSON 指定。
 
-![PixPin_2026-05-05_15-50-40](./Picture/PixPin_2026-05-05_15-50-40.png)
-
-![PixPin_2026-05-05_15-58-03](./Picture/PixPin_2026-05-05_15-58-03.png)
+网页端口 `8000`、远程探针端口和本机 GDB 端口作用不同，不能互相替代。调试前停止占用同一探针的网页 RTT 或其他会话；F5 会下载 ELF，无需先单独烧录。
 
 #### 无线串口
 

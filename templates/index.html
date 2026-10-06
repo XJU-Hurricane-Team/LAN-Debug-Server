@@ -55,29 +55,60 @@
                 <div class="column">串口端口</div>
             </div>
         </div>
+        <div class="custom-flash-box">
+            <h3>Custom CLI 远程烧录</h3>
+            <p class="config-note">EIDE 烧录器选择 Custom CLI，将对应命令填入烧录配置。</p>
+            <div class="flash-command-header"><span>Windows</span><button id="flash-copy-windows" class="btn btn-outline btn-sm" onclick="copyCustomFlash('windows')">复制命令</button></div>
+            <div class="flash-command"><code id="flash-command-windows">python "${ProjectRoot}/Debug_LAN/jlink_flash.py" --program "${programFile}"</code></div>
+            <div class="flash-command-header"><span>Linux</span><button id="flash-copy-linux" class="btn btn-outline btn-sm" onclick="copyCustomFlash('linux')">复制命令</button></div>
+            <div class="flash-command"><code id="flash-command-linux">python3 "${ProjectRoot}/Debug_LAN/jlink_flash.py" --program "${programFile}"</code></div>
+            <p class="config-note">先将 Debug_LAN 工具包和下载的配置保存到客户端工程。此配置用于 EIDE 单独烧录；F5 调试仍选择 Debug: JLINK LAN。不要选择全片擦除，工具未配置该命令。</p>
+            <p class="config-note config-validation" id="flash-copy-status" role="status"></p>
+        </div>
     </section>
 
     <section class="card" id="config-card">
         <header class="card-header">
-            <h2>连接配置</h2>
+            <h2>客户端连接配置</h2>
         </header>
         <div class="config-box">
             <div class="config-empty" id="config-empty">请点击左侧 JLink 设备查看连接配置</div>
             <div id="config" style="display: none;">
-                <code>设备型号</code>
-                <div class="code-container device-row">
-                    <input id="device-input" class="device-input" type="text" placeholder="如 STM32F103RC" autocomplete="off" spellcheck="false">
-                    <span class="device-hint" id="device-hint"></span>
+                <div class="config-fields">
+                    <div>
+                        <label for="device-input">设备型号 <span class="field-note">手动填写，自动记忆</span></label>
+                        <div class="code-container device-row">
+                            <input id="device-input" class="device-input" type="text" placeholder="如 STM32G474VE" autocomplete="off" spellcheck="false">
+                            <span class="device-hint" id="device-hint"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="server-input">服务器名称 / IPv4</label>
+                        <div class="code-container device-row">
+                            <input id="server-input" class="device-input" type="text" autocomplete="off" spellcheck="false">
+                        </div>
+                    </div>
                 </div>
-                <code>launch.json</code>
-                <div class="code-container">
-                    <code id="debug-param">"ipAddress": "xx.xx.xx.xx:yy",</code>
-                    <button class="copy-button" onclick="copyCode('debug-param')"><span>复制</span></button>
+                <p class="config-note" id="server-source"></p>
+                <details class="config-advanced">
+                    <summary>高级设置 <span class="field-note">接口与速度</span></summary>
+                    <div class="config-fields">
+                        <div><label for="interface-input">接口</label><select id="interface-input" class="config-select"><option>SWD</option><option>JTAG</option><option>cJTAG</option><option>FINE</option></select></div>
+                        <div><label for="speed-input">速度（kHz）</label><input id="speed-input" class="config-select" type="number" min="1" max="100000" value="8000"></div>
+                    </div>
+                    <p class="config-note">用于工程烧录与调试；网页 RTT 沿用服务端设置。连接不稳定可降至 4000 或 1000。</p>
+                </details>
+                <div class="config-preview-header">
+                    <code>Debug_LAN/remote-jlink.json</code>
+                    <div class="config-actions">
+                        <button id="config-copy-btn" class="btn btn-primary btn-sm" onclick="copyRemoteConfig()" disabled>复制</button>
+                        <button id="config-download-btn" class="btn btn-outline btn-sm" onclick="downloadRemoteConfig()" disabled>下载</button>
+                    </div>
                 </div>
-                烧录参数：
-                <div class="code-container">
-                    <code id="flash-param">-IP xx.xx.xx.xx:yy</code>
-                    <button class="copy-button" onclick="copyCode('flash-param')"><span>复制</span></button>
+                <pre class="config-preview"><code id="remote-config"></code></pre>
+                <p class="config-note config-validation" id="config-validation" role="status"></p>
+                <div class="config-footnote">
+                    下载后保存到客户端工程的 <code>Debug_LAN/remote-jlink.json</code>。<code>launch.json</code> 仍需手动核对芯片、ELF 与 SVD 路径；首次接入请合并工具包的 <code>vscode/</code> 示例，F5 选择 <code>Debug: JLINK LAN</code>。已有自定义 <code>JLinkExe</code> 路径请保留。
                 </div>
             </div>
         </div>
@@ -89,6 +120,7 @@
             <span class="rtt-status" id="rtt-status">● 未启动</span>
             <span class="rtt-active-sn" id="rtt-active-sn"></span>
             <div class="rtt-actions">
+                <button class="rtt-icon-btn" id="rtt-expand-btn" onclick="toggleRTTExpanded()" aria-pressed="false"><span>放大</span></button>
                 <button class="rtt-toggle-btn" id="rtt-toggle-btn" onclick="toggleRTT()" data-state="idle" disabled>
                     <svg class="icon-play" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
                     <svg class="icon-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
@@ -110,6 +142,7 @@
 </main>
 
 <script>
+    const serverIdentity = {{ server_identity | tojson }};
     // ============================================================
     // 主题切换
     // ============================================================
@@ -123,49 +156,101 @@
     // ============================================================
     // 复制按钮
     // ============================================================
-    function copyCode(id) {
-        const codeEle = document.getElementById(id);
-        const code = codeEle.textContent;
-        const buttonText = codeEle.nextElementSibling.querySelector('span');
-
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(code);
-        } else {
-            var textArea = document.createElement("textarea");
-            textArea.value = code;
-            textArea.style.position = "fixed";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                var successful = document.execCommand('copy');
-                if (!successful) {
-                    console.error('Fallback: Copying text command was unsuccessful');
-                }
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
-            document.body.removeChild(textArea);
+    function defaultServerName() {
+        if (serverIdentity.source === 'avahi-runtime' && serverIdentity.name) {
+            return [serverIdentity.name, '来自 Avahi 当前发布名称；客户端需支持该名称解析。'];
         }
+        const host = window.location.hostname;
+        if (host.endsWith('.local')) return [host, '采用当前网页访问名称。'];
+        if (serverIdentity.name) {
+            return [serverIdentity.name, '来自 Avahi 配置文件，未核实当前发布状态；名称冲突时请核对实际名称。'];
+        }
+        return [lastJlinkData.ip || host, '未读取到 Avahi 名称，采用服务器 IPv4；可手动填写实际 .local 名称。'];
+    }
 
-        buttonText.classList.remove('fade-in');
-        buttonText.classList.add('fade-out');
+    function getRemoteConfig() {
+        const info = lastJlinkData[displayedSN];
+        const port = info && info.server;
+        const name = document.getElementById('server-input').value.trim();
+        const device = document.getElementById('device-input').value.trim();
+        const speed = Number(document.getElementById('speed-input').value);
+        const validName = name.length <= 253 && name.split('.').every(
+            label => /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/.test(label));
+        let error = '';
+        if (!Number.isInteger(port) || port < 1 || port > 65535) error = '该设备没有有效的远程探针端口，无法生成工程配置。';
+        else if (!device || /[\r\n"]/.test(device)) error = '请填写有效的芯片型号，与工程调试配置保持一致。';
+        else if (!validName) error = '请填写服务器名称或 IPv4，不包含 http:// 或端口。';
+        else if (!Number.isInteger(speed) || speed < 1 || speed > 100000) error = '速度须为 1–100000 的整数。';
+        return {
+            error,
+            config: { ServerName: name, Port: Number.isInteger(port) ? port : null, Device: device,
+                Interface: document.getElementById('interface-input').value, SpeedKHz: speed, JLinkExe: '' }
+        };
+    }
 
-        setTimeout(() => {
-            buttonText.textContent = '成功';
-            buttonText.classList.remove('fade-out');
-            buttonText.classList.add('fade-in');
-        }, 300);
+    function updateRemoteConfig() {
+        const result = getRemoteConfig();
+        document.getElementById('remote-config').textContent = JSON.stringify(result.config, null, 2);
+        const status = document.getElementById('config-validation');
+        status.textContent = result.error;
+        document.getElementById('config-copy-btn').disabled = !!result.error;
+        document.getElementById('config-download-btn').disabled = !!result.error;
+        return result;
+    }
 
-        setTimeout(() => {
-            buttonText.classList.remove('fade-in');
-            buttonText.classList.add('fade-out');
-            setTimeout(() => {
-                buttonText.textContent = '复制';
-                buttonText.classList.remove('fade-out');
-                buttonText.classList.add('fade-in');
-            }, 300);
-        }, 3000);
+    async function copyText(textId, buttonId, statusId, label) {
+        const text = document.getElementById(textId).textContent;
+        const button = document.getElementById(buttonId);
+        const status = document.getElementById(statusId);
+        status.textContent = '';
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const area = document.createElement('textarea');
+                area.value = text;
+                area.style.position = 'fixed';
+                document.body.appendChild(area);
+                try {
+                    area.select();
+                    if (!document.execCommand('copy')) throw new Error('copy failed');
+                } finally { area.remove(); }
+            }
+            button.textContent = '已复制';
+        } catch (error) {
+            status.textContent = '复制失败，请选中文本手动复制。';
+        }
+        clearTimeout(button._resetTimer);
+        button._resetTimer = setTimeout(() => { button.textContent = label; }, 1800);
+    }
+
+    async function copyRemoteConfig() {
+        if (updateRemoteConfig().error) return;
+        await copyText('remote-config', 'config-copy-btn', 'config-validation', '复制');
+    }
+
+    async function copyCustomFlash(platform) {
+        await copyText(`flash-command-${platform}`, `flash-copy-${platform}`, 'flash-copy-status', '复制命令');
+    }
+
+    function downloadRemoteConfig() {
+        if (updateRemoteConfig().error) return;
+        const blob = new Blob([document.getElementById('remote-config').textContent + '\n'], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'remote-jlink.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function toggleRTTExpanded() {
+        const expanded = document.body.classList.toggle('rtt-expanded');
+        const button = document.getElementById('rtt-expand-btn');
+        button.setAttribute('aria-pressed', String(expanded));
+        button.querySelector('span').textContent = expanded ? '还原' : '放大';
     }
 
     // ============================================================
@@ -205,8 +290,8 @@
                     row.setAttribute('sn', sn);
                     row.innerHTML =
                         `<div class="column">${sn}${info.rtt_active ? ' <span class="row-rec-dot" title="RTT 记录中">●</span>' : ''}</div>` +
-                        `<div class="column">${info.server}</div>` +
-                        `<div class="column">${info.serial}</div>`;
+                        `<div class="column">${info.server ?? '—'}</div>` +
+                        `<div class="column">${info.serial ?? '—'}</div>`;
                     row.addEventListener('click', () => selectJlink(sn));
                     tableEl.appendChild(row);
 
@@ -219,6 +304,7 @@
                 } else if (displayedSN) {
                     // 同步配置（device 可能在别处变了）
                     syncDeviceInputFromCache();
+                    updateRemoteConfig();
                 }
             })
             .catch(error => console.error('refresh error:', error));
@@ -251,7 +337,6 @@
 
     function showConfigForSN(sn) {
         const info = lastJlinkData[sn];
-        const ip = lastJlinkData.ip || '';
         if (!info) return;
 
         const config = document.getElementById('config');
@@ -259,9 +344,11 @@
         config.style.display = '';
         if (configEmpty) configEmpty.style.display = 'none';
 
-        document.getElementById('debug-param').textContent = `"ipAddress": "${ip}:${info.server}",`;
-        document.getElementById('flash-param').textContent = `-IP ${ip}:${info.server}`;
         document.getElementById('device-input').value = info.device || '';
+        const [server, source] = defaultServerName();
+        document.getElementById('server-input').value = server;
+        document.getElementById('server-source').textContent = source;
+        updateRemoteConfig();
     }
 
     function syncDeviceInputFromCache() {
@@ -295,22 +382,23 @@
         if (!displayedSN) return;
         const input = document.getElementById('device-input');
         const device = input.value.trim();
+        const sn = displayedSN;
         // 与缓存值相同则不必发请求
         const cached = (lastJlinkData[displayedSN] && lastJlinkData[displayedSN].device) || '';
         if (device === cached) return;
 
-        fetch(`/set_device?sn=${encodeURIComponent(displayedSN)}&device=${encodeURIComponent(device)}`)
+        fetch(`/set_device?sn=${encodeURIComponent(sn)}&device=${encodeURIComponent(device)}`)
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'ok') {
-                    showDeviceHint('已保存');
-                    if (lastJlinkData[displayedSN]) lastJlinkData[displayedSN].device = device;
+                    if (sn === displayedSN) showDeviceHint('已保存');
+                    if (lastJlinkData[sn]) lastJlinkData[sn].device = device;
                 } else {
-                    showDeviceHint(data.error || '保存失败', true);
+                    if (sn === displayedSN) showDeviceHint(data.error || '保存失败', true);
                 }
             })
             .catch(err => {
-                showDeviceHint('保存失败', true);
+                if (sn === displayedSN) showDeviceHint('保存失败', true);
                 console.error('set_device error:', err);
             });
     }
@@ -520,6 +608,15 @@
             di.addEventListener('blur', onDeviceBlur);
             di.addEventListener('keydown', onDeviceKeydown);
         }
+        ['device-input', 'server-input', 'interface-input', 'speed-input'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateRemoteConfig);
+        });
+        document.getElementById('server-input').addEventListener('input', () => {
+            document.getElementById('server-source').textContent = '手动设置，仅用于生成工程配置。';
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && document.body.classList.contains('rtt-expanded')) toggleRTTExpanded();
+        });
         refreshJlinkList();
     });
 </script>
